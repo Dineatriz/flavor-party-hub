@@ -2,6 +2,8 @@
 
 Flavor Party Hub is a DIY party game console where the TV is the screen and players' phones are the controllers, no app install needed, everything runs in the browser.
 
+![Lobby](screenshots/lobby.png)
+
 🕹️ How It Works
 
 When the TV opens the app, the server automatically creates a room with a unique code and QR Code. Players scan the QR Code or type the code in their phone's browser to join. The first player to join becomes the Host and controls the game from the TV.

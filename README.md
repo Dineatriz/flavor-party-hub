@@ -15,11 +15,17 @@ All communication between the TV and phones happens through a Node.js + Socket.i
 🧠 The Brainiac (Quiz)
 The Brainiac is a speed quiz where the question appears on the TV with 4 colored options. Players answer using symbol buttons on their phones without seeing the text forcing them to look at the TV. Points are calculated based on speed and correctness.
 
+![quiz](screenshots/quiz.png)
+
 ⚡ Nitro Click (Reaction Test)
 The screen turns red u need to wait for green, then click as fast as possible. Click before the green appears and you're eliminated for that round.
 
+![reaction](screenshots/nitro click.png)
+
 🎨 Doodle Dash (Drawing)
 One player gets a secret word and draws it on their phone. The drawing appears in real time on the TV while other players type their guesses.(similar to gartic)
+
+![draw](screenshots/doodle Dash.png)
 
 🏗️ Architecture
 ```

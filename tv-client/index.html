@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Flavor Party Hub</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                font-family: 'Nunito', sans-serif;
+                background: #0a0a14;
+                color: #f0f0f8;
+                width: 100vw;
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #lobby {
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+                padding: 1.5rem 2rem;
+            }
+
+            #lobby-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                padding-bottom: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            #lobby-title {
+                font-family: 'Fredoka One', cursive;
+                font-size: 2.5rem;
+                background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            #room-info {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+            }
+
+            #room-code-badge {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: #1a1a2e;
+                border: 2px solid #ffd93d;
+                border-radius: 14px;
+                padding: 0.5rem 1.2rem;
+            }
+
+            #room-code-label {
+                font-size: 0.7rem;
+                color: #8888aa;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+            }
+
+            #room-code-value {
+                font-family: 'Fredoka One', cursive;
+                font-size: 2rem;
+                color: #ffd93d;
+                letter-spacing: 0.1em;
+            }
+
+            #lobby-qr {
+                width: 110px;
+                border-radius: 10px;
+            }
+
+            #players-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .player-card {
+                background: #1a1a2e;
+                border-radius: 16px;
+                padding: 1rem 1.2rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+                border: 2px solid rgba(255,255,255,0.08);
+                animation: playerPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+                min-width: 120px;
+            }
+
+            .player-card .avatar {
+                font-size: 2.5rem;;
+            }
+
+            .player-card .pname {
+                font-size: 0.9rem;
+                font-weight: 700;
+                text-align: center;
+            }
+
+            @keyframes playerPop {
+                from { transform: scale(0) rotate(-10deg); opacity: 0;}
+                to { transform: scale(1) rotate(0deg); opacity: 1;}
+            }
+
+            #quiz-screen {
+                display: none;
+                flex-direction: row;
+                height: 100vh;
+                gap: 0;
+            }
+
+            #quiz-main {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 1.5rem;
+                padding: 2rem;
+            }
+
+            #quiz-sidebar {
+                width: 220px;
+                background: #12121f;
+                border-left: 1px solid rgba(255,255,255,0.06);
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 1rem;
+                overflow-y: auto;
+            }
+
+            #quiz-timer-bar {
+                width: 80%;
+                max-width: 800px;
+                height: 12px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            #quiz-timer-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #6bcb77, #ffd93d, #ff6b6b);
+                border-radius: 10px;
+                transition: width 0.5s linear;
+            }
+
+            #quiz-question {
+                font-family: 'Fredoka One', cursive;
+                font-size: 3rem;
+                text-align: center;
+                max-width: 800px;
+            }
+
+            #quiz-options {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+                width: 80%;
+                max-width: 800px;
+            }
+
+            .quiz-option {
+                padding: 1.5rem;
+                border-radius: 16px;
+                font-size: 1.5rem;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                border: 2px solid rgba(255,255,255,0.1);
+            }
+
+            .game-card {
+                background: #1a1a2e;
+                border-radius: 20px;
+                padding: 2rem 2.5rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.8rem;
+                border: 2px solid rgba(255,255,255,0.1);
+                cursor: pointer;
+                transition: transform 0.2s, border-color 0.2s;
+                min-width: 200px;
+            }
+
+            .game-card:hover {
+                transform: scale(1.05);
+                border-color: #ffd93d;
+            }
+
+            .game-card-title {
+                font-family: 'Fredoka One', cursive;
+                font-size: 1.5rem;
+                color: #ffd93d;
+            }
+
+            .game-card-desc {
+                font-size: 0.85rem;
+                color: #8888aa;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="lobby">
+            <div id="lobby-header">
+                <h1 id="lobby-title">🎮 Flavor Party Hub</h1>
+                <div id="room-info">
+                    <div id="room-code-badge">
+                        <span id="room-code-label">Room Code</span>
+                        <span id="room-code-value">--</span>
+                    </div>
+                    <img id="lobby-qr" src="" alt="QR code">
+                </div>
+            </div>
+            <div id="players-list"></div>
+            <div id="start-btn-area" style="margin-top:2rem;">
+                <button onclick="showGameSelect()" style="font-family:'Fredoka One',cursive; font-size:1.5rem; padding:1rem 2rem; border:none; border-radius: 14px; background:linear-gradient(135deg,#ffd93d,#ff9f43); color:#000; cursor:pointer;">
+                    🎮 Start Game
+                </button>
+            </div>
+        </div>
+
+        <div id="game-select-screen" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:2rem">
+            <h1 style="font-family:'Fredoka One',cursive; font-size:3rem; background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Choose a Game!</h1>
+            <div style="display:flex; gap:2rem;">
+                <div class="game-card" onclick="selectGame('quiz')">
+                    <div style="font-size:4rem;">🧠</div>
+                    <div class="game-card-title">The Brainiac</div>
+                    <div class="game-card-desc">Speed quiz with colored buttons</div>
+                </div>
+                <div class="game-card" onclick="selectGame('nitro')">
+                    <div style="font-size:4rem;">⚡</div>
+                    <div class="game-card-title">Nitro Click</div>
+                    <div class="game-card-desc">Reaction test - click when it goes green!</div>
+                </div>
+                <div class="game-card" onclick="selectGame('doodle')">
+                    <div style="font-size:4rem;">🎨</div>
+                    <div class="game-card-title">Doodle Dash</div>
+                    <div class="game-card-desc">Draw on your phone, guess on the TV!</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="countdown-screen" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; align-items:center; justify-content:center; background:rgba(10,10,20,0.85); z-index:99;">
+            <div id="countdown-number" style="font-family:'Fredoka One',cursive; font-size:15rem; background:linear-gradient(135deg,#ff6b6b,#ffd93d); -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></div>
+        </div>
+
+        <div id="quiz-screen">
+            <div id="quiz-main">
+                <div id="quiz-progress" style="font-size:1rem; color:#8888aa;"></div>
+                <div id="quiz-question">...</div>
+                <div id="quiz-timer-bar">
+                    <div id="quiz-timer-fill"></div>
+                </div>
+                <div id="answered-list" style="display:flex; flex-wrap:wrap; gap:0.5rem; justify-content: center;"></div>
+                <div id="quiz-options">
+                    <div class="quiz-option" style="background:rgba(78,205,196,0.15); border-color:#4ECDC4;">
+                        <span style="font-size:2rem; color:#4ECDC4;">▲</span>
+                        <span id="opt-0"></span>
+                    </div>
+                    <div class="quiz-option" style="background:rgba(255,107,107,0.15); border-color:#FF6B6B;">
+                        <span style="font-size:2rem; color:#FF6B6B">●</span>
+                        <span id="opt-1"></span>
+                    </div>
+                    <div class="quiz-option" style="background:rgba(255,217,61,0.15); border-color:#FFE66D;">
+                        <span style="font-size:2rem; color:#FFE66D">■</span>
+                        <span id="opt-2"></span>
+                    </div>
+                    <div class="quiz-option" style="background:rgba(168,230,207,0.15); border-color:#A8E6CF;">
+                        <span style="font-size:2rem; color:#A8E6CF">★</span>
+                        <span id="opt-3"></span>
+                    </div>
+                </div>
+        </div>
+        <div id="quiz-sidebar">
+            <div style="font-family:'Fredoka One',cursive; font-size:1rem; color:#8888aa; margin-bottom:0.5rem;">🏆 Scores</div>
+            <div id="quiz-scoreboard" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </div>    
+        </div>
+
+        <div id="nitro-screen" style="display:none; flex-direction:column; align-items: center; justify-content:center; height:100vh; gap:2rem; transition: background 0.3s;">
+            <div id="nitro-status" style="font-family:'Fredoka One',cursive; font-size:5rem;"></div>
+            <div id="nitro-label" style="font-family:'Fredoka One',cursive; font-size:3rem; color:#f0f0f8;"></div>
+            <div id="nitro-results" style="display:flex; flex-direction:column; gap:0.8rem; width:60%; max-width:600px;"></div>
+        </div>
+
+        <div id="doodle-screen" style="display:none; flex-direction:row; height:100vh;">
+            <div id="doodle-main" style="flex:1; display:flex; flex-direction:column; padding:1rem; gap:1rem;">
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <div id="doodle-drawer-info" style="font-family:'Fredoka One',cursive; font-size:1.5rem;"></div>
+                    <div id="doodle-timer" style="font-family:'Fredoka One',cursive; font-size:1.5rem; color:#ffd93d; margin-left:auto;"></div>
+                </div>
+                <canvas id="doodle-canvas" style="flex:1; background:#fff; border-radius:16px;"></canvas>
+            </div>
+            <div id="doodle-sidebar" style="width:250px; background:#12121f; border-left:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:0.5rem; padding:1rem;">
+                <div style="font-family:'Fredoka One',cursive; font-size:1rem; color:#8888aa;">💭 Guesses</div>
+                <div id="doodle-guesses" style="flex:1; overflow-y:auto; display: flex; flex-direction:column; gap:0.4rem;"></div>
+            </div>
+        </div>
+
+        <div id="results-screen" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:2rem">
+            <h1 style="font-family:'Fredoka One',cursive; font-size:4rem; background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">🏆 Results!</h1>
+            <div id="results-list" style="display:flex; flex-direction:column; gap:1rem; width:600px;"></div>
+            <button onclick="backToLobby()" style="font-family:'Fredoka One',cursive; font-size:1.5rem; padding:1rem 2rem; border:none; border-radius:14px; background:linear-gradient(135deg,#ffd93d,#ff9f43); color:#000; cursor:pointer;">
+                🏠 Back to Lobby
+            </button>
+            <button onclick="playAgain()" style="font-family:'Fredoka One',cursive; font-size:1.5rem; padding:1rem 2rem; border:none; border-radius:14px; background:linear-gradient(135deg,#6bcb77,#4ecdc4); color:#000; cursor:pointer;">
+                🔄️ Play Again
+            </button>
+        </div>
+
+        <script>
+            let currentRoomCode = null;
+            const socket = io();
+            let currentPlayers = [];
+
+            async function init() {
+                const res = await fetch('/api/room/create', { method: 'POST' });
+                const data = await res.json();
+
+                currentRoomCode = data.code;
+                document.getElementById('room-code-value').textContent = data.code;
+                document.getElementById('lobby-qr').src = data.qr;
+
+                socket.emit('tv:register', { roomCode: data.code });
+            }
+
+            socket.on('connect', () => {
+                console.log('TV connected to server');
+            });
+
+            socket.on('tv:player_joined', ({ players }) => {
+                const list = document.getElementById('players-list');
+                list.innerHTML = '';
+                currentPlayers = players;
+                players.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'player-card';
+                    card.style.borderColor = p.color + '66'
+                    card.innerHTML = `
+                    <div class="avatar">${p.avatar}</div>
+                    <div class="pname" style="color:${p.color}">${p.name}</div>
+                    `;
+                    list.appendChild(card);
+                });
+            });
+
+            socket.on('game:start', ({ game, data }) => {
+                console.log('game:start received', game);
+                if (game === 'quiz') {
+                    document.getElementById('game-select-screen').style.display = 'none';
+                }
+
+                if (game === 'nitro') {
+                    document.getElementById('game-select-screen').style.display = 'none';
+                    document.getElementById('nitro-screen').style.display = 'flex';
+                }
+
+                if (game === 'doodle') {
+                    document.getElementById('game-select-screen').style.display = 'none';
+                    document.getElementById('doodle-screen').style.display = 'flex';
+                    document.getElementById('doodle-guesses').innerHTML = '';
+                    const canvas = document.getElementById('doodle-canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    document.getElementById('doodle-drawer-info').textContent = `${data.drawerAvatar} ${data.drawerName} is drawing...`;
+
+                    let timeLeft = data.timeLimit;
+                    document.getElementById('doodle-timer').textContent = `⏱ ${timeLeft}s`;
+                    doodleTimer = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('doodle-timer').textContent = `⏱ ${timeLeft}s`;
+                        if (timeLeft <= 0) clearInterval(doodleTimer);
+                    }, 1000);
+                }
+            });
+
+            socket.on('quiz:countdown', ({ count }) => {
+                if (count > 0) {
+                    document.getElementById('lobby').style.display = 'none';
+                    document.getElementById('game-select-screen').style.display = 'none';
+                    document.getElementById('countdown-screen').style.display = 'flex';
+                    document.getElementById('quiz-screen').style.display = 'none';
+                    document.getElementById('countdown-number').textContent = count;
+                } else {
+                    document.getElementById('countdown-screen').style.display = 'none';
+                    document.getElementById('quiz-screen').style.display = 'flex';
+                }
+            });
+
+            socket.on('quiz:question', ({ index, total, question, opts, timeLimit }) => {
+                document.getElementById('answered-list').innerHTML = '';
+                const options = document.querySelectorAll('.quiz-option');
+                options.forEach(opt => {
+                    opt.style.opacity = '1';
+                    opt.style.background = '';
+                });
+                document.getElementById('quiz-progress').textContent = `Question ${index + 1} of ${total}`;
+                document.getElementById('quiz-question').textContent = question;
+                document.getElementById('opt-0').textContent = opts[0];
+                document.getElementById('opt-1').textContent = opts[1];
+                document.getElementById('opt-2').textContent = opts[2];
+                document.getElementById('opt-3').textContent = opts[3];
+                const fill = document.getElementById('quiz-timer-fill');
+                fill.style.transition = 'none';
+                fill.style.width = '100%';
+                setTimeout(() => {
+                    fill.style.transition = `width ${timeLimit}s linear`;
+                    fill.style.width = '0%';
+                }, 50);
+            });
+
+            socket.on('quiz:reveal', ({ correctIndex, results, scores }) => {
+                const options = document.querySelectorAll('.quiz-option');
+                options.forEach((opt, i) => {
+                    if (i === correctIndex) opt.style.background = 'rgba(107,203,119,0.4)';
+                    else opt.style.opacity = '0.3';
+                });
+                const board = document.getElementById('quiz-scoreboard');
+                board.innerHTML = '';
+                scores.sort((a, b) => b.score - a.score).forEach((p, i) => {
+                    const chip = document.createElement('div');
+                    chip.style.cssText = 'display:flex; align-items:center; gap:0.5rem; background:#1a1a2e; padding:0.4rem 0.8rem; border-radius:20px; font-size:0.9rem; border: 1px solid rgba(255,255,255,0.1);';
+                    chip.innerHTML = `<span>${['🥇','🥈','🥉'][i] || (i+1)+'.'}</span><span>${p.avatar}</span><span style="color:${p.color}">${p.name}</span><span style="color:#ffd93d; font-weight:700;">${p.score}</span>`;
+                    board.appendChild(chip);
+                });
+            });
+
+            socket.on('nitro:armed', () => {
+                document.getElementById('nitro-screen').style.background = '#2a0505';
+                document.getElementById('nitro-status').textContent = '🔴';
+                document.getElementById('nitro-label').textContent = 'Get ready...';
+                document.getElementById('nitro-results').innerHTML = '';
+            });
+
+            socket.on('nitro:go', () => {
+                document.getElementById('nitro-screen').style.background = '#052a0b';
+                document.getElementById('nitro-status').textContent = '🟢';
+                document.getElementById('nitro-label').textContent = 'CLICK NOW!';
+            });
+
+            socket.on('nitro:reveal', ({ results, eliminated, scores }) => {
+                const list = document.getElementById('nitro-results');
+                list.innerHTML = '';
+                results.forEach((p, i) => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-item:center; gap:1rem; background:#1a1a2e; padding:0.8rem 1.2rem; border-radius:14px;';
+                    row.innerHTML = `
+                        <span style="font-size:1.5rem">${['🥇','🥈','🥉'][i] || (i+1)+'.'}</span>
+                        <span style="font-size:1.5rem">${p.avatar}</span>
+                        <span style="font-weight:700; color:${p.color}; flex:1">${p.name}</span>
+                        <span style="color:#ffd93d; font-weight:700;">${p.ms}ms</span>
+                    `;
+                    list.appendChild(row);
+                });
+                eliminated?.forEach(p => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; gap:1rem; background:#1a1a2e; padding:0.8rem 1.2rem; border-radius:14px; opacity:0.5;';
+                    row.innerHTML = `
+                        <span style="font-size:1.5rem">⚠️</span>
+                        <span style="font-size:1.5rem">${p.avatar}</span>
+                        <span style="font-weight:700; color:${p.color}; flex:1">${p.name}</span>
+                        <span style="color:#ff6b6b; font-weight:700;">False Start</span>
+                    `;
+                    list.appendChild(row);
+                });
+            });
+
+            let doodleTimer = null;
+
+            socket.on('doodle:guess_broadcast', ({ playerName, guess, correct }) => {
+                const list = document.getElementById('doodle-guesses');
+                const item = document.createElement('div');
+                item.style.cssText = `padding:0.3rem 0.6rem; border-radius:8px; font-size:0.85rem; background:${correct ? 'rgba(107,203,119,0.2)' : 'rgba(255,255,255,0.05)'}; color:${correct ? '#6bcb77' : '#8888aa'};`;
+                item.textContent = `${playerName}: ${guess}`;
+                list.appendChild(item);
+                list.scrollTop = list.scrollHeight;
+            });
+
+            socket.on('tv:doodle_stroke', ({ stroke }) => {
+                drawStroke(stroke);
+            });
+
+            socket.on('tv:player_answered', ({ playerId }) => {
+                const player = currentPlayers.find(p => p.id === playerId);
+                if (!player) return;
+                const answered = document.getElementById('answered-list');
+                if (!answered) return;
+                const chip = document.createElement('div');
+                chip.style.cssText = 'display:flex; align-items:center; gap:0.5rem; background:#1a1a2e; padding:0.4rem; border-radius:20px; font-size:0.9rem;';
+                chip.innerHTML = `<span>${player.avatar}</span><span style="color:${player.color}">${player.name}</span><span>✅</span>`;
+                answered.appendChild(chip);
+            });
+
+            socket.on('game:results', ({ results }) => {
+                document.getElementById('nitro-screen').style.display = 'none';
+                document.getElementById('quiz-screen').style.display = 'none';
+                document.getElementById('results-screen').style.display = 'flex';
+                document.getElementById('doodle-screen').style.display = 'none';
+
+                const list = document.getElementById('results-list');
+                list.innerHTML = '';
+                const medals = ['🥇', '🥈', '🥉'];
+                results.forEach((p, i) => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; gap:1rem; background:#1a1a2e; padding:1rem 1.5rem; border-radius:14px';
+                    row.innerHTML = `
+                        <span style="font-size:1.8rem">${medals[i] || (i+1) + '.'}</span>
+                        <span style="font-size:1.8rem">${p.avatar}</span>
+                        <span style="font-weight:700; color:${p.color}; flex:1">${p.name}</span>
+                        <span style="font-family:'Fredoka One',cursive; font-size:1.5rem; color:#ffd93d">${p.score} pts</span>
+                        <span style="font-size:0.9rem; color:#6bcb77; margin-left:0.5rem;">+${p.score - (p.roundScore || 0)}</span>
+                    `;
+                    list.appendChild(row);
+                });
+            });
+
+            function selectGame(game) {
+                document.getElementById('game-select-screen').style.display = 'none';
+                socket.emit('host:start_game', { roomCode: currentRoomCode, game });
+            }
+
+            function showGameSelect() {
+                document.getElementById('lobby').style.display = 'none';
+                document.getElementById('game-select-screen').style.display = 'flex';
+            }
+
+            function backToLobby() {
+                socket.emit('back:lobby', { roomCode: currentRoomCode });
+                document.getElementById('results-screen').style.display = 'none';
+                document.getElementById('lobby').style.display = 'flex';
+                const players = currentPlayers;
+                const list = document.getElementById('players-list');
+                list.innerHTML = '';
+                players.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'player-card';
+                    card.style.borderColor = p.color + '66';
+                    card.innerHTML = `
+                        <div class="avatar">${p.avatar}</div>
+                        <div class="pname" style="color:${p.color}">${p.name}</div>
+                    `;
+                    list.appendChild(card);
+                })
+                currentPlayers = [];
+            }
+
+            function drawStroke(stroke) {
+                const canvas = document.getElementById('doodle-canvas');
+                const ctx = canvas.getContext('2d');
+                if (!stroke || !stroke.points || stroke.points.length < 2) return;
+
+                ctx.strokeStyle = stroke.color || '#000';
+                ctx.lineWidth = stroke.width || 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(stroke.points[0].x * canvas.width, stroke.points[0].y * canvas.height);
+                for (let i = 1; i < stroke.points.length; i++) {
+                    ctx.lineTo(stroke.points[i].x * canvas.width, stroke.points[i].y * canvas.height);
+                }
+                ctx.stroke();
+            }
+
+            function playAgain() {
+                socket.emit('back:lobby', { roomCode: currentRoomCode });
+                document.getElementById('results-screen').style.display = 'none';
+                document.getElementById('game-select-screen').style.display = 'flex';
+                const players = currentPlayers;
+                const list = document.getElementById('players-list');
+                list.innerHTML = '';
+                players.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'player-card';
+                    card.style.borderColor = p.color + '66';
+                    card.innerHTML = `
+                        <div class="avatar">${p.avatar}</div>
+                        <div class="pname" style="color:${p.color}">${p.name}</div>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+
+            init();
+        </script>
+    </body>
+</html>

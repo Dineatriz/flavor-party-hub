@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Flavor</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+        <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+                font-family: 'Nunito', sans-serif;
+                background: #0a0a14;
+                color: #f0f0f8;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 2rem 1.5rem;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-family: 'Fredoka One', cursive;
+                font-size: 2rem;
+                background:  linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            input:focus { border-color: #ffd93d; }
+
+            button {
+                width: 100%;
+                max-width: 320px;
+                padding: 1rem;
+                border: none;
+                border-radius: 14px;
+                background: linear-gradient(135deg, #ffd93d, #ff9f43);
+                color: #000;
+                font-family: 'Fredoka One', cursive;
+                font-size: 1.3rem;
+                cursor: pointer;
+            }
+
+            input {
+                width: 100%;
+                max-width: 320px;
+                padding: 0.9rem 1.1rem;
+                background: #1a1a2e;
+                border: 2px solid rgba(255,255,255,0.1);
+                border-radius: 14px;
+                color: #f0f0f8;
+                font-family: 'Nunito', sans-serif;
+                font-size: 1rem;
+                font-weight: 700;
+                outline: none;
+            }
+
+            .color-dot {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                cursor: pointer;
+                border: 3px solid transparent;
+            }
+
+            .color-dot.active {
+                border-color: #fff;
+            }
+
+            #error-msg { color: #ff6b6b; font-size: 0.85rem; min-height: 1.2rem; }
+        </style>
+    </head>
+    <body>
+        <div id="screen-join">
+            <h1>🎮 Flavor</h1>
+            <input type="text" id="input-code" placeholder="Room code (ex: FT-XXX)">
+            <input type="text" id="input-name" placeholder="Your name">
+            <button onclick="joinRoom()">Join 🎉</button>
+            <p id="error-msg"></p>
+        </div>
+
+        <div id="screen-lobby" style="display:none; text-align: center;">
+            <div id="welcome-avatar" style="font-size: 4rem"></div>
+            <div id="welcome-name" style="font-family: 'Fredoka One', cursive; font-size: 1.8rem;"></div>
+            <p style="color: #8888aa; margin-top: 1rem">Waiting for the host to start...</p>
+        </div>
+
+        <div id="screen-quiz" style="display: none; width: 100%; height: 100vh; display: none; flex-direction: column; gap: 0.8rem; padding: 1rem;">
+            <div id="quiz-status" style="text-align:center; color:#8888aa; font-size:0.9rem">Waiting for question...</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; flex:1;">
+                <button class="quiz-btn" data-index="0" style="background:rgba(78,205,196,0.25); border:3px solid #4ECDC4; font-size:3rem; border-radius:20px;" onclick="sendAnswer(0)">▲</button>
+                <button class="quiz-btn" data-index="1" style="background:rgba(255,107,107,0.25); border:3px solid #FF6B6B; font-size:3rem; border-radius:20px;" onclick="sendAnswer(1)">●</button>
+                <button class="quiz-btn" data-index="2" style="background:rgba(255,217,61,0.25);  border:3px solid #FFE66D; font-size:3rem; border-radius:20px;" onclick="sendAnswer(2)">■</button>
+                <button class="quiz-btn" data-index="3" style="background:rgba(168,230,207,0.25); border:3px solid #A8E6CF; font-size:3rem; border-radius:20px;" onclick="sendAnswer(3)">★</button>
+            </div>
+            <div id="quiz-feedback" style="text-align:center; font-family:'Fredoka One',cursive; font-size:1.5rem; min-height:2rem;"></div>
+        </div>
+
+        <div id="screen-nitro" style="display:none; flex-direction:column; align-items:center; justify-content: center; height:100vh; width:100vw; gap:1rem; transition: background 0.2s; cursor:pointer;" onclick="sendNitroClick()">
+            <div id="nitro-btn-icon" style="font-size:8rem;">🔴</div>
+            <div id="nitro-feedback" style="font-family:'Fredoka One',cursive; font-size:1.8rem; text-align:center;"></div>
+        </div>
+        </div>
+
+        <div id="screen-doodle-draw" style="display:none; flex-direction:column; height:100vh; width:100vw;">
+            <div id="draw-word-banner" style="font-family:'Fredoka One',cursive; font-size:1.3rem; color:#ffd93d; text-align:center; padding:0.8rem; background:#1a1a2e;">
+                Draw: ...
+            </div>
+            <div style="display:flex; gap:0.5rem; padding:0.5rem; background:#12121f; flex-wrap:wrap;">
+                <div class="color-dot" style="background:#000000;" onclick="setColor('#000000')"></div>
+                <div class="color-dot" style="background:#e74c3c;" onclick="setColor('#e74c3c')"></div>
+                <div class="color-dot" style="background:#3498db;" onclick="setColor('#3498db')"></div>
+                <div class="color-dot" style="background:#2ecc71;" onclick="setColor('#2ecc71')"></div>
+                <div class="color-dot" style="background:#f39c12;" onclick="setColor('#f39c12')"></div>
+                <div class="color-dot" style="background:#9b59b6;" onclick="setColor('#9b59b6')"></div>
+                <div class="color-dot" style="background:#ffffff; border:1px solid #444;" onclick="setColor('#ffffff')"></div>
+            </div>
+            <canvas id="draw-canvas" style="flex:1; background:#fff; touch-action:none"></canvas>
+        </div>
+
+        <div id="screen-doodle-guess" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1rem;">
+            <div id="guess-info" style="font-family:'Fredoka One',cursive; font-size:1.3rem; text-align:center; color:#8888aa;"></div>
+            <input type="text" id="guess-input" placeholder="Type your guess...">
+            <button onclick="sendGuess()">Send Guess 🎨</button>
+            <div id="guess-feed" style="width:100%; max-width:320px; display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y:auto;"></div>
+        </div>
+
+        <div id="screen-results" style="display:none; flex-direction:column; align-items:center; gap:1rem; padding:2rem; text-align:center">
+            <h1>🏆 Results!</h1>
+            <p style="color:#8888aa;">Check the TV for the full results!</p>
+        </div>
+
+        <script>
+            const socket = io();
+            const urlParams = new URLSearchParams(window.location.search);
+            const codeFromUrl = urlParams.get('room');
+            if (codeFromUrl) document.getElementById('input-code').value = codeFromUrl.toUpperCase();
+
+            let quizAnswered = false;
+
+            function showScreen(name) {
+                document.getElementById('screen-join').style.display = 'none';
+                document.getElementById('screen-lobby').style.display = 'none';
+                document.getElementById('screen-quiz').style.display = 'none';
+                document.getElementById('screen-results').style.display = 'none';
+                document.getElementById('screen-nitro').style.display = 'none';
+                document.getElementById('screen-doodle-draw').style.display = 'none';
+                document.getElementById('screen-doodle-guess').style.display = 'none';
+                document.getElementById('screen-' + name).style.display = 'flex';
+            }
+
+            function joinRoom() {
+                const code = document.getElementById('input-code').value.trim().toUpperCase();
+                const name = document.getElementById('input-name').value.trim();
+                if (!code) { document.getElementById('error-msg').textContent = 'Enter the room code!'; return; }
+                if (!name) { document.getElementById('error-msg').textContent = 'Enter your name!'; return; }
+                localStorage.setItem('ft_room', code);
+                socket.emit('player:join', { roomCode: code, name });
+            }
+
+            socket.on('player:joined', ({ player }) => {
+                document.getElementById('welcome-avatar').textContent = player.avatar;
+                document.getElementById('welcome-name').textContent = player.name;
+                document.getElementById('welcome-name').style.color = player.color;
+                showScreen('lobby');
+            });
+
+            socket.on('game:start', ({ game, data }) => {
+                if (game === 'quiz') {
+                    quizAnswered = false;
+                    showScreen('quiz');
+                }
+                if (game === 'nitro') {
+                    showScreen('nitro');
+                }
+                if (game === 'doodle') {
+                    if (data && data.drawerId !== socket.id) {
+                        document.getElementById('guess-info').textContent = `${data.drawerAvatar} ${data.drawerName} is drawing...`;
+                        document.getElementById('guess-feed').innerHTML = '';
+                        showScreen('doodle-guess');
+                    }
+                }
+            });
+
+            socket.on('quiz:question', ({ index, total }) => {
+                quizAnswered = false;
+                document.getElementById('quiz-status').textContent = `Question ${index + 1} of ${total} - Look at the TV!`;
+                document.getElementById('quiz-feedback').textContent = '';
+                document.querySelectorAll('.quiz-btn').forEach(b => b.disabled = false);
+            });
+
+            function sendAnswer(index) {
+                if (quizAnswered) return;
+                quizAnswered = true;
+                const roomCode = localStorage.getItem('ft_room');
+                socket.emit('quiz:answer', { roomCode, answerIndex: index });
+                document.querySelectorAll('.quiz-btn').forEach(b => b.disabled = true);
+                document.getElementById('quiz-feedback').textContent = '⏳ Answer sent!';
+            }
+
+            socket.on('quiz:answer_received', ({ position }) => {
+                document.getElementById('quiz-feedback').textContent = `⚡ You answered in position ${position}!`;
+            });
+
+            socket.on('quiz:reveal', ({ correctIndex, results }) => {
+                const me = results.find(r => r.playerId === socket.id);
+                if (me && me.correct) {
+                    document.getElementById('quiz-feedback').textContent = `✅ +${me.points} points!`;
+                    document.getElementById('quiz-feedback').style.color = '#6bcb77';
+                } else {
+                    document.getElementById('quiz-feedback').textContent = '❌ Wrong!';
+                    document.getElementById('quiz-feedback').style.color = '#ff6b6b';
+                }
+            });
+
+            socket.on('nitro:armed', () => {
+                const screen = document.getElementById('screen-nitro');
+                screen.style.background = '#1a0505';
+                document.getElementById('nitro-btn-icon').textContent = '🔴';
+                document.getElementById('nitro-feedback').textContent = 'Wait for green...';
+                document.getElementById('nitro-feedback').style.color = '#f0f0f8';
+            });
+
+            socket.on('nitro:go', () => {
+                const screen = document.getElementById('screen-nitro');
+                screen.style.background = '#051a08';
+                document.getElementById('nitro-btn-icon').textContent = '🟢';
+                document.getElementById('nitro-feedback').textContent = 'CLICK!';
+            });
+
+            socket.on('nitro:false_start', () => {
+                document.getElementById('nitro-feedback').textContent = '⚠️ False start! Eliminated!';
+                document.getElementById('nitro-feedback').style.color = '#ff6b6b';
+            });
+
+            socket.on('nitro:clicked', ({ reaction }) => {
+                document.getElementById('nitro-feedback').textContent = `⚡ ${reaction}ms!`;
+                document.getElementById('nitro-feedback').style.color = '#ffd93d';
+            });
+
+            let drawColor = '#000000';
+            let isDrawing = false;
+            let currentStroke = [];
+
+            socket.on('doodle:your_word', ({ word }) => {
+                document.getElementById('draw-word-banner').textContent = `Draw: ${word}`;
+                showScreen('doodle-draw');
+                initDrawCanvas();
+            });
+
+            socket.on('doodle:correct', ({ points }) => {
+                document.getElementById('guess-input').disabled = true;
+                document.getElementById('guess-info').textContent = `✅ Correct! +${points} pts`;
+                document.getElementById('guess-info').style.color = '#6bcb77';
+            });
+
+            socket.on('doodle:guess_broadcast', ({ playerName, guess, correct }) => {
+                const feed = document.getElementById('guess-feed');
+                const item = document.createElement('div');
+                item.style.cssText = `padding:0.3rem 0.6rem; border-radius:8px; font-size:0.85rem; background:${correct ? 'rgba(107,203,119,0.2)' : 'rgba(255,255,255,0.05)'}; color:${correct ? '#6bcb77' : '#8888aa'};`;
+                item.textContent = `${playerName}: ${guess}`;
+                feed.appendChild(item);
+                feed.scrollTop = feed.scrollTop = feed.scrollHeight;
+            });
+
+            function sendGuess() {
+                const input = document.getElementById('guess-input');
+                const guess = input.value.trim();
+                if (!guess) return;
+                const roomCode = localStorage.getItem('ft_room');
+                socket.emit('doodle:guess', { roomCode, guess });
+                input.value = '';
+            }
+
+            function setColor(color) {
+                drawColor = color;
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+
+            function sendNitroClick() {
+                const roomCode = localStorage.getItem('ft_room');
+                socket.emit('nitro:click', { roomCode });
+            }
+
+            socket.on('error', ({ msg }) => {
+                document.getElementById('error-msg').textContent = msg;
+            });
+
+            socket.on('game:results', ({ results }) => {
+                document.getElementById('screen-nitro').style.display = 'none';
+                showScreen('results');
+                showScreen('results');
+            });
+
+            socket.on('game:back_to_lobby', () => {
+                showScreen('lobby');
+            });
+
+            function initDrawCanvas() {
+                const canvas = document.getElementById('draw-canvas');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                canvas.addEventListener('pointerdown', (e) => {
+                    isDrawing = true;
+                    currentStroke = [{ x: e.offsetX / canvas.width, y: e.offsetY / canvas.height }];
+                    e.preventDefault();
+                });
+
+                canvas.addEventListener('pointermove', (e) => {
+                    if (!isDrawing) return;
+                    const point = { x: e.offsetX / canvas.width, y: e.offsetY / canvas.height };
+                    currentStroke.push(point);
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.strokeStyle = drawColor;
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    if (currentStroke.length >=2) {
+                        ctx.beginPath();
+                        ctx.moveTo(currentStroke[currentStroke.length - 2].x * canvas.width, currentStroke[currentStroke.length - 2].y * canvas.height);
+                        ctx.lineTo(point.x * canvas.width, point.y * canvas.height);
+                        ctx.stroke();
+                    }
+
+                    if (currentStroke.length % 5 === 0) {
+                        const roomCode = localStorage.getItem('ft_room');
+                        socket.emit('doodle:draw', { roomCode, stroke: { points: [...currentStroke], color: drawColor, width: 4 } });
+                    }
+                    e.preventDefault();
+                });
+
+                canvas.addEventListener('pointerup', (e) => {
+                    if (!isDrawing) return;
+                    isDrawing = false;
+                    const roomCode = localStorage.getItem('ft_room');
+                    socket.emit('doodle:draw', { roomCode, stroke: { points: currentStroke, color: drawColor, width: 4 } });
+                    currentStroke = [];
+                });
+            }
+        </script>
+    </body>
+</html>

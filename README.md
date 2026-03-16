@@ -25,7 +25,7 @@ The screen turns red u need to wait for green, then click as fast as possible. C
 🎨 Doodle Dash (Drawing)
 One player gets a secret word and draws it on their phone. The drawing appears in real time on the TV while other players type their guesses.(similar to gartic)
 
-![draw](screenshots/doodle-Dash.png)
+![draw](screenshots/doodle-dash.png)
 
 🏗️ Architecture
 ```

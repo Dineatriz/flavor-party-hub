@@ -72,3 +72,5 @@ Then open `http://localhost:3000/tv` on the TV and `http://[LOCAL_IP]:3000/mobil
 - Express
 - Socket.io
 - QRCode
+
+![score](screenshots/scoreboard.png)

@@ -44,6 +44,9 @@ flavor-party-hub/
 
 This software is designed to run on a **Raspberry Pi 5** connected to a TV via HDMI. The Raspberry Pi sits inside a custom 3D printed case and connects to a custom PCB featuring:
 
+![CAD](screenshots/CAD_1.png)
+![CAD2](screenshots/CAD_2.png)
+
 - 8 LEDs for visual effects
 - 1 buzzer for sound feedback  
 - 2 push buttons

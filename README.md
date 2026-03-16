@@ -54,6 +54,9 @@ This software is designed to run on a **Raspberry Pi 5** connected to a TV via H
 
 The PCB was designed in KiCad and connects directly to the Raspberry Pi via the 40-pin GPIO header.
 
+![pcb3d](screenshots/pcb.png)
+![pcb](screenshots/pcb-3d.png)
+
 🚀 Setup
 ```bash
 cd server
